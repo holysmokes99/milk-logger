@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Milk Log</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
+
+  :root {
+    --cream: #F7F3EC;
+    --bark: #3B2F1E;
+    --moss: #4A5C3A;
+    --moss-light: #6B7F5A;
+    --hay: #C8A84B;
+    --milk: #FFFFFF;
+    --error: #8B3A2A;
+    --fog: #B8B0A4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--cream);
+    color: var(--bark);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 20px 40px;
+  }
+
+  header {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--bark);
+  }
+
+  header .date {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--fog);
+    letter-spacing: 0.5px;
+  }
+
+  .cows {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+
+  .cow-card {
+    background: var(--milk);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(59,47,30,0.08);
+  }
+
+  .cow-name {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--moss);
+    margin-bottom: 14px;
+  }
+
+  .sessions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .session {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .session-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--fog);
+    letter-spacing: 0.5px;
+  }
+
+  .session-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--bark);
+    line-height: 1;
+  }
+
+  .session-value.empty {
+    color: #D8D0C8;
+  }
+
+  .session-value span.unit {
+    font-size: 13px;
+    color: var(--fog);
+    margin-left: 2px;
+  }
+
+  /* Big voice button */
+  .voice-wrap {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  #voiceBtn {
+    width: 100%;
+    padding: 22px;
+    background: var(--moss);
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  #voiceBtn:active { transform: scale(0.97); }
+  #voiceBtn.listening { background: var(--error); }
+  #voiceBtn.listening .btn-icon { animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .btn-icon { font-size: 22px; }
+
+  #transcript {
+    width: 100%;
+    min-height: 48px;
+    background: var(--milk);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--bark);
+    line-height: 1.5;
+    display: none;
+  }
+
+  #transcript.visible { display: block; }
+
+  #statusMsg {
+    font-size: 13px;
+    color: var(--moss-light);
+    text-align: center;
+    min-height: 20px;
+    font-weight: 500;
+  }
+
+  #statusMsg.error { color: var(--error); }
+
+  .confirm-box {
+    width: 100%;
+    background: var(--milk);
+    border-radius: 16px;
+    padding: 18px 20px;
+    border: 2px solid var(--hay);
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .confirm-box.visible { display: flex; }
+
+  .confirm-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--bark);
+  }
+
+  .confirm-text strong { color: var(--moss); }
+
+  .confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .btn-confirm {
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .btn-yes { background: var(--moss); color: #fff; }
+  .btn-no  { background: var(--cream); color: var(--bark); }
+
+  /* Saved toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--bark);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐄 Milk Log</h1>
+  <span class="date" id="dateLabel"></span>
+</header>
+
+<div class="cows" id="cowCards">
+  <!-- Poppy -->
+  <div class="cow-card">
+    <div class="cow-name">Poppy</div>
+    <div class="sessions">
+      <div class="session">
+        <div class="session-label">AM</div>
+        <div class="session-value empty" id="poppy-am">—<span class="unit"></span></div>
+      </div>
+      <div class="session">
+        <div class="session-label">PM</div>
+        <div class="session-value empty" id="poppy-pm">—<span class="unit"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aurora -->
+  <div class="cow-card">
+    <div class="cow-name">Aurora Rose</div>
+    <div class="sessions">
+      <div class="session">
+        <div class="session-label">AM</div>
+        <div class="session-value empty" id="aurora-am">—<span class="unit"></span></div>
+      </div>
+      <div class="session">
+        <div class="session-label">PM</div>
+        <div class="session-value empty" id="aurora-pm">—<span class="unit"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="voice-wrap">
+  <button id="voiceBtn">
+    <span class="btn-icon">🎙️</span>
+    <span id="btnLabel">Record milk amount</span>
+  </button>
+
+  <div id="transcript"></div>
+  <div id="statusMsg"></div>
+
+  <div class="confirm-box" id="confirmBox">
+    <div class="confirm-text" id="confirmText"></div>
+    <div class="confirm-actions">
+      <button class="btn-confirm btn-no" id="btnNo">Try again</button>
+      <button class="btn-confirm btn-yes" id="btnYes">Save ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Config ────────────────────────────────────────────────────────────────
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxaCvXouV1DjRwTqYBW6srOz2-uC5ELLQalHgRw9L1friyxZ0zMZREhjv5W2OHiAKk/exec';
+  const ANTHROPIC_URL   = 'https://api.anthropic.com/v1/messages';
+
+  // Column mapping (1-indexed)
+  const COL = {
+    'poppy':  { am: 11, pm: 12 },   // K, L
+    'aurora': { am: 14, pm: 15 },   // N, O
+  };
+
+  // Row for Jan 1 2026
+  const JAN1_ROW = 7;
+  const JAN1_DATE = new Date('2026-01-01');
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let pendingEntry = null; // { cow, session, kg, row, col }
+
+  // ── Date helpers ──────────────────────────────────────────────────────────
+  function todayRow() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const jan1  = new Date(2026, 0, 1);
+    const diff  = Math.round((today - jan1) / 86400000);
+    return JAN1_ROW + diff;
+  }
+
+  function formatDate(d) {
+    return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  document.getElementById('dateLabel').textContent = formatDate(new Date());
+
+  // ── Display helpers ───────────────────────────────────────────────────────
+  function setStatus(msg, isError = false) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = isError ? 'error' : '';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function updateCard(cow, session, kg) {
+    const id = `${cow}-${session}`;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('empty');
+    el.innerHTML = `${kg}<span class="unit"> kg</span>`;
+  }
+
+  // ── Voice recording ───────────────────────────────────────────────────────
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-CA';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+  }
+
+  const voiceBtn  = document.getElementById('voiceBtn');
+  const btnLabel  = document.getElementById('btnLabel');
+  const transcript = document.getElementById('transcript');
+
+  voiceBtn.addEventListener('click', () => {
+    if (!recognition) {
+      setStatus('Speech recognition not supported on this browser.', true);
+      return;
+    }
+    if (voiceBtn.classList.contains('listening')) {
+      recognition.stop();
+      return;
+    }
+    hideConfirm();
+    transcript.textContent = '';
+    transcript.classList.remove('visible');
+    setStatus('');
+    recognition.start();
+  });
+
+  recognition && (recognition.onstart = () => {
+    voiceBtn.classList.add('listening');
+    btnLabel.textContent = 'Listening… tap to stop';
+    setStatus('');
+  });
+
+  recognition && (recognition.onresult = async (e) => {
+    const text = e.results[0][0].transcript;
+    transcript.textContent = `"${text}"`;
+    transcript.classList.add('visible');
+    await parseWithClaude(text);
+  });
+
+  recognition && (recognition.onend = () => {
+    voiceBtn.classList.remove('listening');
+    btnLabel.textContent = 'Record milk amount';
+  });
+
+  recognition && (recognition.onerror = (e) => {
+    voiceBtn.classList.remove('listening');
+    btnLabel.textContent = 'Record milk amount';
+    setStatus('Microphone error: ' + e.error, true);
+  });
+
+  // ── Claude parsing ────────────────────────────────────────────────────────
+  async function parseWithClaude(text) {
+    setStatus('Parsing…');
+
+    const systemPrompt = `You extract milk logging data from spoken phrases on a dairy farm.
+The farm has two cows: Poppy and Aurora Rose (also called Aurora).
+Sessions are AM (morning) or PM (afternoon/evening).
+Weight is in kilograms (kg).
+
+Respond ONLY with a JSON object, no markdown, no explanation:
+{"cow": "poppy" or "aurora", "session": "am" or "pm", "kg": number}
+
+If the cow, session, or amount cannot be determined, respond:
+{"error": "brief reason"}
+
+Assume AM if no session is mentioned and it sounds like a morning context.
+Assume PM if no session is mentioned and it sounds like an afternoon/evening context.
+If session is truly ambiguous, ask in the error field.`;
+
+    try {
+      const res = await fetch(ANTHROPIC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 100,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: text }]
+        })
+      });
+
+      const data = await res.json();
+      const raw  = data.content?.[0]?.text?.trim() || '';
+      const parsed = JSON.parse(raw);
+
+      if (parsed.error) {
+        setStatus('Couldn\'t understand: ' + parsed.error, true);
+        return;
+      }
+
+      const { cow, session, kg } = parsed;
+      const col = COL[cow]?.[session];
+      if (!col) { setStatus('Unknown cow or session.', true); return; }
+
+      const row = todayRow();
+      pendingEntry = { cow, session, kg, row, col };
+      showConfirm(cow, session, kg);
+      setStatus('');
+
+    } catch (err) {
+      setStatus('Error parsing speech. Try again.', true);
+      console.error(err);
+    }
+  }
+
+  // ── Confirm UI ────────────────────────────────────────────────────────────
+  function showConfirm(cow, session, kg) {
+    const cowLabel = cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
+    const sessionLabel = session.toUpperCase();
+    document.getElementById('confirmText').innerHTML =
+      `Save <strong>${kg} kg</strong> for <strong>${cowLabel}</strong> <strong>${sessionLabel}</strong> today?`;
+    document.getElementById('confirmBox').classList.add('visible');
+  }
+
+  function hideConfirm() {
+    document.getElementById('confirmBox').classList.remove('visible');
+    pendingEntry = null;
+  }
+
+  document.getElementById('btnNo').addEventListener('click', () => {
+    hideConfirm();
+    transcript.classList.remove('visible');
+    setStatus('');
+  });
+
+  document.getElementById('btnYes').addEventListener('click', async () => {
+    if (!pendingEntry) return;
+    await saveToSheet(pendingEntry);
+  });
+
+  // ── Google Sheets write ───────────────────────────────────────────────────
+  async function saveToSheet({ cow, session, kg, row, col }) {
+    setStatus('Saving to spreadsheet…');
+    document.getElementById('confirmBox').classList.remove('visible');
+
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ row, col, value: kg })
+      });
+
+      // Update local display
+      updateCard(cow, session, kg);
+      transcript.classList.remove('visible');
+      pendingEntry = null;
+      setStatus('');
+      showToast('Saved ✓');
+
+    } catch (err) {
+      setStatus('Failed to save. Check your connection.', true);
+      console.error(err);
+    }
+  }
+</script>
+</body>
+</html>
