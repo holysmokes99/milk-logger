@@ -307,7 +307,7 @@
   // ── Config ────────────────────────────────────────────────────────────────
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxaCvXouV1DjRwTqYBW6srOz2-uC5ELLQalHgRw9L1friyxZ0zMZREhjv5W2OHiAKk/exec';
   const ANTHROPIC_URL   = 'https://api.anthropic.com/v1/messages';
-  const ANTHROPIC_KEY = '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';
+  const ANTHROPIC_KEY = 'sk-ant-api03--6Gyw9AmdiMEh5A...REDACTED...MoZWDILml04UbQ-spKRpAAA';
 
   // Column mapping (1-indexed)
   const COL = {
@@ -415,7 +415,7 @@
   });
 
   // ── Claude parsing ────────────────────────────────────────────────────────
-  async function parseWithClaude(text) {
+ async function parseWithClaude(text) {
     setStatus('Parsing…');
 
     const systemPrompt = `You extract milk logging data from spoken phrases on a dairy farm.
@@ -436,7 +436,12 @@ If session is truly ambiguous, ask in the error field.`;
     try {
       const res = await fetch(ANTHROPIC_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 100,
@@ -446,7 +451,14 @@ If session is truly ambiguous, ask in the error field.`;
       });
 
       const data = await res.json();
-      const raw  = data.content?.[0]?.text?.trim() || '';
+      console.log('Claude response:', JSON.stringify(data));
+
+      if (data.error) {
+        setStatus('API error: ' + data.error.message, true);
+        return;
+      }
+
+      const raw = data.content?.[0]?.text?.trim() || '';
       const parsed = JSON.parse(raw);
 
       if (parsed.error) {
@@ -464,7 +476,7 @@ If session is truly ambiguous, ask in the error field.`;
       setStatus('');
 
     } catch (err) {
-      setStatus('Error parsing speech. Try again.', true);
+      setStatus('Error: ' + err.message, true);
       console.error(err);
     }
   }
