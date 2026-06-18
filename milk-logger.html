@@ -445,8 +445,12 @@ If session is truly ambiguous, ask in the error field.`;
         })
       });
 
-      const data = await res.json();
-      const raw  = data.content?.[0]?.text?.trim() || '';
+	const data = await res.json();
+	if (!res.ok) {
+	  setStatus('API error ' + res.status + ': ' + (data.error?.message || JSON.stringify(data)), true);
+	  return;
+	}
+	const raw  = data.content?.[0]?.text?.trim() || '';
       const parsed = JSON.parse(raw);
 
       if (parsed.error) {
