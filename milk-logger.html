@@ -88,7 +88,7 @@
   #setupError { font-size: 13px; color: var(--error); display: none; }
 
   /* ── Main app ── */
-  #mainApp { display: none; width: 100%; max-width: 420px; flex-direction: column; align-items: center; gap: 0; }
+  #mainApp { display: none; width: 100%; max-width: 420px; flex-direction: column; align-items: center; }
   #mainApp.visible { display: flex; }
 
   .cows { width: 100%; display: flex; flex-direction: column; gap: 16px; margin-bottom: 36px; }
@@ -102,13 +102,23 @@
 
   .cow-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--moss); margin-bottom: 14px; }
 
-  .sessions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sessions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
   .session { display: flex; flex-direction: column; gap: 4px; }
   .session-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--fog); letter-spacing: 0.5px; }
-
   .session-value { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; color: var(--bark); line-height: 1; }
   .session-value.empty { color: #D8D0C8; }
   .session-value span.unit { font-size: 13px; color: var(--fog); margin-left: 2px; }
+
+  .cow-notes {
+    font-size: 12px;
+    color: var(--fog);
+    font-style: italic;
+    line-height: 1.4;
+    min-height: 16px;
+    border-top: 1px solid #F0EAE0;
+    padding-top: 8px;
+    margin-top: 4px;
+  }
 
   .voice-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 
@@ -227,13 +237,13 @@
 <!-- Setup screen -->
 <div id="setupScreen">
   <h2>Enter your API key</h2>
-  <p>Your key is stored only in this browser session and is never saved to the file.</p>
+  <p>Your key is saved in this browser so you only need to enter it once.</p>
   <input id="keyInput" type="password" placeholder="sk-ant-api03-..." autocomplete="off" autocorrect="off" spellcheck="false" />
   <div id="setupError">Please enter a valid API key (starts with sk-ant-)</div>
   <button id="setupBtn">Start logging →</button>
 </div>
 
-<!-- Main app (hidden until key entered) -->
+<!-- Main app -->
 <div id="mainApp">
   <div class="cows">
     <div class="cow-card">
@@ -248,6 +258,7 @@
           <div class="session-value empty" id="poppy-pm">—<span class="unit"></span></div>
         </div>
       </div>
+      <div class="cow-notes" id="poppy-notes"></div>
     </div>
     <div class="cow-card">
       <div class="cow-name">Aurora Rose</div>
@@ -261,13 +272,14 @@
           <div class="session-value empty" id="aurora-pm">—<span class="unit"></span></div>
         </div>
       </div>
+      <div class="cow-notes" id="aurora-notes"></div>
     </div>
   </div>
 
   <div class="voice-wrap">
     <button id="voiceBtn">
       <span class="btn-icon">🎙️</span>
-      <span id="btnLabel">Record milk amount</span>
+      <span id="btnLabel">Record milking info</span>
     </button>
     <div id="transcript"></div>
     <div id="statusMsg"></div>
@@ -290,22 +302,30 @@
   const ANTHROPIC_URL   = 'https://api.anthropic.com/v1/messages';
 
   const COL = {
-    'poppy':  { am: 11, pm: 12 },
-    'aurora': { am: 14, pm: 15 },
+    'poppy':  { am: 11, pm: 12, notes: 17 },   // K, L, Q
+    'aurora': { am: 14, pm: 15, notes: 18 },    // N, O, R
   };
 
-  const JAN1_ROW = 7;
+  const JAN1_ROW  = 7;
+  const TODAY     = new Date();
 
   // ── State ─────────────────────────────────────────────────────────────────
   let ANTHROPIC_KEY = '';
   let pendingEntry  = null;
 
-  // ── Setup screen ──────────────────────────────────────────────────────────
+  // ── API key: load from localStorage ──────────────────────────────────────
   const setupScreen = document.getElementById('setupScreen');
   const mainApp     = document.getElementById('mainApp');
   const keyInput    = document.getElementById('keyInput');
   const setupBtn    = document.getElementById('setupBtn');
   const setupError  = document.getElementById('setupError');
+
+  const savedKey = localStorage.getItem('milk_logger_api_key');
+  if (savedKey && savedKey.startsWith('sk-ant-')) {
+    ANTHROPIC_KEY = savedKey;
+    keyInput.value = savedKey;
+    showMainApp();
+  }
 
   setupBtn.addEventListener('click', activateKey);
   keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') activateKey(); });
@@ -317,25 +337,51 @@
       return;
     }
     ANTHROPIC_KEY = val;
+    localStorage.setItem('milk_logger_api_key', val);
     setupError.style.display = 'none';
+    showMainApp();
+  }
+
+  function showMainApp() {
     setupScreen.style.display = 'none';
     mainApp.classList.add('visible');
   }
 
   document.getElementById('changeKeyBtn').addEventListener('click', () => {
     ANTHROPIC_KEY = '';
+    localStorage.removeItem('milk_logger_api_key');
     keyInput.value = '';
     mainApp.classList.remove('visible');
     setupScreen.style.display = 'flex';
   });
 
   // ── Date helpers ──────────────────────────────────────────────────────────
-  function todayRow() {
-    const now   = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const jan1  = new Date(2026, 0, 1);
-    const diff  = Math.round((today - jan1) / 86400000);
+  function dateToRow(date) {
+    const d    = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const jan1 = new Date(2026, 0, 1);
+    const diff = Math.round((d - jan1) / 86400000);
     return JAN1_ROW + diff;
+  }
+
+  function todayRow() { return dateToRow(new Date()); }
+
+  function parseDate(dateStr) {
+    // dateStr from Claude will be "today", "yesterday", or "YYYY-MM-DD"
+    if (!dateStr || dateStr === 'today') return new Date();
+    if (dateStr === 'yesterday') {
+      const d = new Date(); d.setDate(d.getDate() - 1); return d;
+    }
+    // YYYY-MM-DD
+    const [y, m, day] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, day);
+  }
+
+  function formatDateLabel(date) {
+    const today = new Date();
+    const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+    if (date.toDateString() === today.toDateString()) return 'today';
+    if (date.toDateString() === yesterday.toDateString()) return 'yesterday';
+    return date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
   }
 
   function formatDate(d) {
@@ -358,11 +404,19 @@
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
-  function updateCard(cow, session, kg) {
+  function updateMilkCard(cow, session, kg) {
     const el = document.getElementById(`${cow}-${session}`);
     if (!el) return;
     el.classList.remove('empty');
     el.innerHTML = `${kg}<span class="unit"> kg</span>`;
+  }
+
+  function appendNoteDisplay(cow, note) {
+    const el = document.getElementById(`${cow}-notes`);
+    if (!el) return;
+    el.textContent = el.textContent
+      ? el.textContent + '; ' + note
+      : note;
   }
 
   // ── Voice recording ───────────────────────────────────────────────────────
@@ -404,12 +458,12 @@
 
   recognition && (recognition.onend = () => {
     voiceBtn.classList.remove('listening');
-    btnLabel.textContent = 'Record milk amount';
+    btnLabel.textContent = 'Record milking info';
   });
 
   recognition && (recognition.onerror = (e) => {
     voiceBtn.classList.remove('listening');
-    btnLabel.textContent = 'Record milk amount';
+    btnLabel.textContent = 'Record milking info';
     setStatus('Microphone error: ' + e.error, true);
   });
 
@@ -417,20 +471,32 @@
   async function parseWithClaude(text) {
     setStatus('Parsing…');
 
-    const systemPrompt = `You extract milk logging data from spoken phrases on a dairy farm.
+    const todayStr = new Date().toISOString().split('T')[0];
+    const currentYear = new Date().getFullYear();
+
+    const systemPrompt = `You extract farm diary entries from spoken phrases. Today is ${todayStr}.
 The farm has two cows: Poppy and Aurora Rose (also called Aurora).
 Sessions are AM (morning) or PM (afternoon/evening).
 Weight is in kilograms (kg).
 
-Respond ONLY with a JSON object, no markdown, no explanation:
-{"cow": "poppy" or "aurora", "session": "am" or "pm", "kg": number}
+There are two types of entries:
 
-If the cow, session, or amount cannot be determined, respond:
-{"error": "brief reason"}
+1. MILK entry — someone reporting how much milk was collected.
+Respond with:
+{"type":"milk","cow":"poppy" or "aurora","session":"am" or "pm","kg":number,"date":"today" or "yesterday" or "YYYY-MM-DD"}
 
-Assume AM if no session is mentioned and it sounds like a morning context.
-Assume PM if no session is mentioned and it sounds like an afternoon/evening context.
-If session is truly ambiguous, include it in the error field.`;
+2. NOTE entry — someone adding an observation or note about a cow.
+Respond with:
+{"type":"note","cow":"poppy" or "aurora","note":"the note text cleaned up","date":"today" or "yesterday" or "YYYY-MM-DD"}
+
+Rules:
+- Assume AM if morning context, PM if afternoon/evening context. If truly ambiguous, default to AM.
+- For dates: "today" if no date mentioned, "yesterday" if they say yesterday, otherwise YYYY-MM-DD using year ${currentYear}.
+- For notes, clean up the speech naturally — remove filler like "add a note that" or "note that", keep the meaningful content.
+- Cow name is required for both types. If unclear, respond: {"error":"which cow?"}
+- If nothing useful can be extracted, respond: {"error":"brief reason"}
+
+Respond ONLY with a JSON object, no markdown, no explanation.`;
 
     try {
       const res = await fetch(ANTHROPIC_URL, {
@@ -443,7 +509,7 @@ If session is truly ambiguous, include it in the error field.`;
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 100,
+          max_tokens: 150,
           system: systemPrompt,
           messages: [{ role: 'user', content: text }]
         })
@@ -464,12 +530,30 @@ If session is truly ambiguous, include it in the error field.`;
         return;
       }
 
-      const { cow, session, kg } = parsed;
-      const col = COL[cow]?.[session];
-      if (!col) { setStatus('Unknown cow or session.', true); return; }
+      const date    = parseDate(parsed.date);
+      const dateLabel = formatDateLabel(date);
+      const row     = dateToRow(date);
 
-      pendingEntry = { cow, session, kg, row: todayRow(), col };
-      showConfirm(cow, session, kg);
+      if (parsed.type === 'milk') {
+        const { cow, session, kg } = parsed;
+        const col = COL[cow]?.[session];
+        if (!col) { setStatus('Unknown cow or session.', true); return; }
+        pendingEntry = { type: 'milk', cow, session, kg, row, col, dateLabel };
+        const cowLabel = cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
+        document.getElementById('confirmText').innerHTML =
+          `Save <strong>${kg} kg</strong> for <strong>${cowLabel}</strong> <strong>${session.toUpperCase()}</strong> — <strong>${dateLabel}</strong>?`;
+
+      } else if (parsed.type === 'note') {
+        const { cow, note } = parsed;
+        const col = COL[cow]?.notes;
+        if (!col) { setStatus('Unknown cow for note.', true); return; }
+        pendingEntry = { type: 'note', cow, note, row, col, dateLabel };
+        const cowLabel = cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
+        document.getElementById('confirmText').innerHTML =
+          `Add note for <strong>${cowLabel}</strong> — <strong>${dateLabel}</strong>:<br><em>"${note}"</em>`;
+      }
+
+      document.getElementById('confirmBox').classList.add('visible');
       setStatus('');
 
     } catch (err) {
@@ -479,13 +563,6 @@ If session is truly ambiguous, include it in the error field.`;
   }
 
   // ── Confirm UI ────────────────────────────────────────────────────────────
-  function showConfirm(cow, session, kg) {
-    const cowLabel = cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
-    document.getElementById('confirmText').innerHTML =
-      `Save <strong>${kg} kg</strong> for <strong>${cowLabel}</strong> <strong>${session.toUpperCase()}</strong> today?`;
-    document.getElementById('confirmBox').classList.add('visible');
-  }
-
   function hideConfirm() {
     document.getElementById('confirmBox').classList.remove('visible');
     pendingEntry = null;
@@ -499,28 +576,69 @@ If session is truly ambiguous, include it in the error field.`;
 
   document.getElementById('btnYes').addEventListener('click', async () => {
     if (!pendingEntry) return;
-    await saveToSheet(pendingEntry);
+    if (pendingEntry.type === 'milk') {
+      await saveMilk(pendingEntry);
+    } else if (pendingEntry.type === 'note') {
+      await saveNote(pendingEntry);
+    }
   });
 
-  // ── Google Sheets write ───────────────────────────────────────────────────
-  async function saveToSheet({ cow, session, kg, row, col }) {
-    setStatus('Saving to spreadsheet…');
+  // ── Google Sheets: write a single cell ───────────────────────────────────
+  async function writeCell(row, col, value) {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ row, col, value })
+    });
+  }
+
+  // ── Google Sheets: read a cell then append note ───────────────────────────
+  async function saveNote({ cow, note, row, col }) {
+    setStatus('Saving note…');
     document.getElementById('confirmBox').classList.remove('visible');
 
     try {
+      // Read existing cell value first, then append
+      const readRes = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'read', row, col })
+      });
+
+      // Because of no-cors we can't read the response body,
+      // so we append via a dedicated append action instead
       await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ row, col, value: kg })
+        body: JSON.stringify({ action: 'append', row, col, value: note, separator: '; ' })
       });
 
-      updateCard(cow, session, kg);
+      if (pendingEntry.dateLabel === 'today') appendNoteDisplay(cow, note);
+      transcript.classList.remove('visible');
+      pendingEntry = null;
+      setStatus('');
+      showToast('Note saved ✓');
+
+    } catch (err) {
+      setStatus('Failed to save note. Check your connection.', true);
+      console.error(err);
+    }
+  }
+
+  async function saveMilk({ cow, session, kg, row, col }) {
+    setStatus('Saving to spreadsheet…');
+    document.getElementById('confirmBox').classList.remove('visible');
+
+    try {
+      await writeCell(row, col, kg);
+      if (pendingEntry.dateLabel === 'today') updateMilkCard(cow, session, kg);
       transcript.classList.remove('visible');
       pendingEntry = null;
       setStatus('');
       showToast('Saved ✓');
-
     } catch (err) {
       setStatus('Failed to save. Check your connection.', true);
       console.error(err);
