@@ -35,13 +35,81 @@
     width: 100%;
     max-width: 420px;
     display: flex;
-    align-items: baseline;
-    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 32px;
   }
 
+  .header-left { display: flex; align-items: baseline; gap: 10px; }
   header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--bark); }
   header .date { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--fog); letter-spacing: 0.5px; }
+
+  #helpBtn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--fog);
+    background: none;
+    color: var(--fog);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #helpBtn:active { border-color: var(--moss); color: var(--moss); }
+
+  /* ── Help modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(59,47,30,0.5);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.visible { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--cream);
+    border-radius: 24px 24px 0 0;
+    padding: 28px 24px 48px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    transform: translateY(40px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.visible .modal { transform: translateY(0); }
+
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .modal-header h2 { font-size: 17px; font-weight: 700; color: var(--bark); }
+
+  #closeHelp {
+    background: none; border: none; font-size: 22px; cursor: pointer;
+    color: var(--fog); line-height: 1;
+  }
+
+  .help-section { margin-bottom: 20px; }
+  .help-section h3 {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.2px; color: var(--moss); margin-bottom: 10px;
+  }
+
+  .help-example {
+    background: var(--milk);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--bark);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
 
   /* ── Setup screen ── */
   #setupScreen {
@@ -69,7 +137,6 @@
     background: var(--cream);
     outline: none;
   }
-
   #keyInput:focus { border-color: var(--moss); }
 
   #setupBtn {
@@ -102,23 +169,25 @@
 
   .cow-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--moss); margin-bottom: 14px; }
 
-  .sessions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .sessions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .session { display: flex; flex-direction: column; gap: 4px; }
   .session-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--fog); letter-spacing: 0.5px; }
   .session-value { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; color: var(--bark); line-height: 1; }
   .session-value.empty { color: #D8D0C8; }
   .session-value span.unit { font-size: 13px; color: var(--fog); margin-left: 2px; }
 
-  .cow-notes {
-    font-size: 12px;
-    color: var(--fog);
-    font-style: italic;
-    line-height: 1.4;
-    min-height: 16px;
-    border-top: 1px solid #F0EAE0;
-    padding-top: 8px;
-    margin-top: 4px;
+  /* Shared notes card */
+  .notes-card {
+    background: var(--milk);
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 4px rgba(59,47,30,0.08);
+    width: 100%;
+    margin-bottom: 36px;
   }
+  .notes-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--moss); margin-bottom: 8px; }
+  #daily-notes { font-size: 13px; color: var(--bark); line-height: 1.5; font-style: italic; min-height: 18px; }
+  #daily-notes.empty { color: var(--fog); font-style: normal; }
 
   .voice-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 
@@ -145,9 +214,7 @@
   #voiceBtn:active { transform: scale(0.97); }
   #voiceBtn.listening { background: var(--error); }
   #voiceBtn.listening .btn-icon { animation: pulse 1s infinite; }
-
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-
   .btn-icon { font-size: 22px; }
 
   #transcript {
@@ -178,10 +245,8 @@
     gap: 14px;
   }
   .confirm-box.visible { display: flex; }
-
   .confirm-text { font-size: 15px; line-height: 1.5; color: var(--bark); }
   .confirm-text strong { color: var(--moss); }
-
   .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
   .btn-confirm {
@@ -195,34 +260,24 @@
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
-
   .btn-yes { background: var(--moss); color: #fff; }
   .btn-no  { background: var(--cream); color: var(--bark); }
 
   .change-key {
-    font-size: 12px;
-    color: var(--fog);
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-decoration: underline;
+    font-size: 12px; color: var(--fog);
+    background: none; border: none;
+    cursor: pointer; text-decoration: underline;
     margin-top: 8px;
   }
 
   .toast {
-    position: fixed;
-    bottom: 32px;
-    left: 50%;
+    position: fixed; bottom: 32px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--bark);
-    color: #fff;
-    padding: 12px 24px;
-    border-radius: 100px;
-    font-size: 14px;
-    font-weight: 600;
+    background: var(--bark); color: #fff;
+    padding: 12px 24px; border-radius: 100px;
+    font-size: 14px; font-weight: 600;
     transition: transform 0.3s ease;
-    pointer-events: none;
-    white-space: nowrap;
+    pointer-events: none; white-space: nowrap;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
@@ -230,9 +285,51 @@
 <body>
 
 <header>
-  <h1>🐄 Milk Log</h1>
-  <span class="date" id="dateLabel"></span>
+  <div class="header-left">
+    <h1>🐄 Milk Log</h1>
+    <span class="date" id="dateLabel"></span>
+  </div>
+  <button id="helpBtn">?</button>
 </header>
+
+<!-- Help modal -->
+<div class="modal-overlay" id="helpOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Voice command examples</h2>
+      <button id="closeHelp">×</button>
+    </div>
+
+    <div class="help-section">
+      <h3>🥛 Milk — today</h3>
+      <div class="help-example">"Poppy morning milk was 10 kg"</div>
+      <div class="help-example">"Aurora milked 12.4 kilograms this afternoon"</div>
+      <div class="help-example">"Poppy PM was 8.5 kg"</div>
+    </div>
+
+    <div class="help-section">
+      <h3>🥛 Milk — other dates</h3>
+      <div class="help-example">"Poppy milked 10.2 kg yesterday morning"</div>
+      <div class="help-example">"Aurora morning milk was 9 kg June 10"</div>
+      <div class="help-example">"Poppy PM 7.8 kg yesterday"</div>
+    </div>
+
+    <div class="help-section">
+      <h3>📋 Notes</h3>
+      <div class="help-example">"Add a note that Poppy was feeling under the weather today"</div>
+      <div class="help-example">"Note that Aurora's milk production seems low this morning"</div>
+      <div class="help-example">"Add a note that both cows were given their monthly minerals"</div>
+      <div class="help-example">"Note that Aurora was limping slightly yesterday"</div>
+    </div>
+
+    <div class="help-section">
+      <h3>💡 Tips</h3>
+      <div class="help-example">You can say "kilograms", "kilos", or "kg" — all work.</div>
+      <div class="help-example">Always confirm before saving — tap "Try again" if anything looks wrong.</div>
+      <div class="help-example">Multiple notes in one day are separated by semicolons automatically.</div>
+    </div>
+  </div>
+</div>
 
 <!-- Setup screen -->
 <div id="setupScreen">
@@ -258,7 +355,6 @@
           <div class="session-value empty" id="poppy-pm">—<span class="unit"></span></div>
         </div>
       </div>
-      <div class="cow-notes" id="poppy-notes"></div>
     </div>
     <div class="cow-card">
       <div class="cow-name">Aurora Rose</div>
@@ -272,8 +368,12 @@
           <div class="session-value empty" id="aurora-pm">—<span class="unit"></span></div>
         </div>
       </div>
-      <div class="cow-notes" id="aurora-notes"></div>
     </div>
+  </div>
+
+  <div class="notes-card">
+    <div class="notes-label">Today's Notes</div>
+    <div id="daily-notes" class="empty">No notes yet</div>
   </div>
 
   <div class="voice-wrap">
@@ -302,16 +402,22 @@
   const ANTHROPIC_URL   = 'https://api.anthropic.com/v1/messages';
 
   const COL = {
-    'poppy':  { am: 11, pm: 12, notes: 17 },   // K, L, Q
-    'aurora': { am: 14, pm: 15, notes: 18 },    // N, O, R
+    'poppy':  { am: 11, pm: 12 },  // K, L
+    'aurora': { am: 14, pm: 15 },  // N, O
+    'notes': 17                     // Q (shared)
   };
 
-  const JAN1_ROW  = 7;
-  const TODAY     = new Date();
+  const JAN1_ROW = 7;
 
   // ── State ─────────────────────────────────────────────────────────────────
   let ANTHROPIC_KEY = '';
   let pendingEntry  = null;
+
+  // ── Help modal ────────────────────────────────────────────────────────────
+  const helpOverlay = document.getElementById('helpOverlay');
+  document.getElementById('helpBtn').addEventListener('click', () => helpOverlay.classList.add('visible'));
+  document.getElementById('closeHelp').addEventListener('click', () => helpOverlay.classList.remove('visible'));
+  helpOverlay.addEventListener('click', e => { if (e.target === helpOverlay) helpOverlay.classList.remove('visible'); });
 
   // ── API key: load from localStorage ──────────────────────────────────────
   const setupScreen = document.getElementById('setupScreen');
@@ -323,7 +429,6 @@
   const savedKey = localStorage.getItem('milk_logger_api_key');
   if (savedKey && savedKey.startsWith('sk-ant-')) {
     ANTHROPIC_KEY = savedKey;
-    keyInput.value = savedKey;
     showMainApp();
   }
 
@@ -332,10 +437,7 @@
 
   function activateKey() {
     const val = keyInput.value.trim();
-    if (!val.startsWith('sk-ant-')) {
-      setupError.style.display = 'block';
-      return;
-    }
+    if (!val.startsWith('sk-ant-')) { setupError.style.display = 'block'; return; }
     ANTHROPIC_KEY = val;
     localStorage.setItem('milk_logger_api_key', val);
     setupError.style.display = 'none';
@@ -363,32 +465,25 @@
     return JAN1_ROW + diff;
   }
 
-  function todayRow() { return dateToRow(new Date()); }
-
   function parseDate(dateStr) {
-    // dateStr from Claude will be "today", "yesterday", or "YYYY-MM-DD"
     if (!dateStr || dateStr === 'today') return new Date();
     if (dateStr === 'yesterday') {
       const d = new Date(); d.setDate(d.getDate() - 1); return d;
     }
-    // YYYY-MM-DD
     const [y, m, day] = dateStr.split('-').map(Number);
     return new Date(y, m - 1, day);
   }
 
   function formatDateLabel(date) {
-    const today = new Date();
+    const today     = new Date();
     const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
-    if (date.toDateString() === today.toDateString()) return 'today';
+    if (date.toDateString() === today.toDateString())     return 'today';
     if (date.toDateString() === yesterday.toDateString()) return 'yesterday';
     return date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
   }
 
-  function formatDate(d) {
-    return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
-  }
-
-  document.getElementById('dateLabel').textContent = formatDate(new Date());
+  document.getElementById('dateLabel').textContent =
+    new Date().toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
 
   // ── Display helpers ───────────────────────────────────────────────────────
   function setStatus(msg, isError = false) {
@@ -411,12 +506,14 @@
     el.innerHTML = `${kg}<span class="unit"> kg</span>`;
   }
 
-  function appendNoteDisplay(cow, note) {
-    const el = document.getElementById(`${cow}-notes`);
-    if (!el) return;
-    el.textContent = el.textContent
-      ? el.textContent + '; ' + note
-      : note;
+  function appendNoteDisplay(note) {
+    const el = document.getElementById('daily-notes');
+    if (el.classList.contains('empty')) {
+      el.classList.remove('empty');
+      el.textContent = note;
+    } else {
+      el.textContent += '; ' + note;
+    }
   }
 
   // ── Voice recording ───────────────────────────────────────────────────────
@@ -471,7 +568,7 @@
   async function parseWithClaude(text) {
     setStatus('Parsing…');
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr    = new Date().toISOString().split('T')[0];
     const currentYear = new Date().getFullYear();
 
     const systemPrompt = `You extract farm diary entries from spoken phrases. Today is ${todayStr}.
@@ -485,15 +582,14 @@ There are two types of entries:
 Respond with:
 {"type":"milk","cow":"poppy" or "aurora","session":"am" or "pm","kg":number,"date":"today" or "yesterday" or "YYYY-MM-DD"}
 
-2. NOTE entry — someone adding an observation or note about a cow.
+2. NOTE entry — a general farm observation or note (may or may not mention a specific cow).
 Respond with:
-{"type":"note","cow":"poppy" or "aurora","note":"the note text cleaned up","date":"today" or "yesterday" or "YYYY-MM-DD"}
+{"type":"note","note":"the note text cleaned up","date":"today" or "yesterday" or "YYYY-MM-DD"}
 
 Rules:
 - Assume AM if morning context, PM if afternoon/evening context. If truly ambiguous, default to AM.
-- For dates: "today" if no date mentioned, "yesterday" if they say yesterday, otherwise YYYY-MM-DD using year ${currentYear}.
-- For notes, clean up the speech naturally — remove filler like "add a note that" or "note that", keep the meaningful content.
-- Cow name is required for both types. If unclear, respond: {"error":"which cow?"}
+- For dates: use "today" if no date mentioned, "yesterday" if they say yesterday, otherwise YYYY-MM-DD using year ${currentYear}.
+- For notes, clean up naturally — remove filler phrases like "add a note that", "note that", "please note" — keep the meaningful content. Preserve any cow names mentioned in the note text itself.
 - If nothing useful can be extracted, respond: {"error":"brief reason"}
 
 Respond ONLY with a JSON object, no markdown, no explanation.`;
@@ -525,14 +621,11 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
       const raw    = data.content?.[0]?.text?.trim() || '';
       const parsed = JSON.parse(raw);
 
-      if (parsed.error) {
-        setStatus('Couldn\'t understand: ' + parsed.error, true);
-        return;
-      }
+      if (parsed.error) { setStatus('Couldn\'t understand: ' + parsed.error, true); return; }
 
-      const date    = parseDate(parsed.date);
+      const date      = parseDate(parsed.date);
       const dateLabel = formatDateLabel(date);
-      const row     = dateToRow(date);
+      const row       = dateToRow(date);
 
       if (parsed.type === 'milk') {
         const { cow, session, kg } = parsed;
@@ -541,16 +634,12 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
         pendingEntry = { type: 'milk', cow, session, kg, row, col, dateLabel };
         const cowLabel = cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
         document.getElementById('confirmText').innerHTML =
-          `Save <strong>${kg} kg</strong> for <strong>${cowLabel}</strong> <strong>${session.toUpperCase()}</strong> — <strong>${dateLabel}</strong>?`;
+          `Save <strong>${kg} kg</strong> for <strong>${cowLabel} ${session.toUpperCase()}</strong> — <strong>${dateLabel}</strong>?`;
 
       } else if (parsed.type === 'note') {
-        const { cow, note } = parsed;
-        const col = COL[cow]?.notes;
-        if (!col) { setStatus('Unknown cow for note.', true); return; }
-        pendingEntry = { type: 'note', cow, note, row, col, dateLabel };
-        const cowLabel = cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
+        pendingEntry = { type: 'note', note: parsed.note, row, col: COL.notes, dateLabel };
         document.getElementById('confirmText').innerHTML =
-          `Add note for <strong>${cowLabel}</strong> — <strong>${dateLabel}</strong>:<br><em>"${note}"</em>`;
+          `Add note for <strong>${dateLabel}</strong>:<br><br><em>"${parsed.note}"</em>`;
       }
 
       document.getElementById('confirmBox').classList.add('visible');
@@ -576,72 +665,46 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
 
   document.getElementById('btnYes').addEventListener('click', async () => {
     if (!pendingEntry) return;
-    if (pendingEntry.type === 'milk') {
-      await saveMilk(pendingEntry);
-    } else if (pendingEntry.type === 'note') {
-      await saveNote(pendingEntry);
-    }
+    pendingEntry.type === 'milk' ? await saveMilk(pendingEntry) : await saveNote(pendingEntry);
   });
 
-  // ── Google Sheets: write a single cell ───────────────────────────────────
-  async function writeCell(row, col, value) {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ row, col, value })
-    });
-  }
-
-  // ── Google Sheets: read a cell then append note ───────────────────────────
-  async function saveNote({ cow, note, row, col }) {
-    setStatus('Saving note…');
+  // ── Save milk ─────────────────────────────────────────────────────────────
+  async function saveMilk({ cow, session, kg, row, col, dateLabel }) {
+    setStatus('Saving…');
     document.getElementById('confirmBox').classList.remove('visible');
-
     try {
-      // Read existing cell value first, then append
-      const readRes = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'read', row, col })
-      });
-
-      // Because of no-cors we can't read the response body,
-      // so we append via a dedicated append action instead
       await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
+        method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'append', row, col, value: note, separator: '; ' })
+        body: JSON.stringify({ action: 'write', row, col, value: kg })
       });
-
-      if (pendingEntry.dateLabel === 'today') appendNoteDisplay(cow, note);
-      transcript.classList.remove('visible');
-      pendingEntry = null;
-      setStatus('');
-      showToast('Note saved ✓');
-
-    } catch (err) {
-      setStatus('Failed to save note. Check your connection.', true);
-      console.error(err);
-    }
-  }
-
-  async function saveMilk({ cow, session, kg, row, col }) {
-    setStatus('Saving to spreadsheet…');
-    document.getElementById('confirmBox').classList.remove('visible');
-
-    try {
-      await writeCell(row, col, kg);
-      if (pendingEntry.dateLabel === 'today') updateMilkCard(cow, session, kg);
+      if (dateLabel === 'today') updateMilkCard(cow, session, kg);
       transcript.classList.remove('visible');
       pendingEntry = null;
       setStatus('');
       showToast('Saved ✓');
     } catch (err) {
       setStatus('Failed to save. Check your connection.', true);
-      console.error(err);
+    }
+  }
+
+  // ── Save note (append) ────────────────────────────────────────────────────
+  async function saveNote({ note, row, col, dateLabel }) {
+    setStatus('Saving note…');
+    document.getElementById('confirmBox').classList.remove('visible');
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'append', row, col, value: note, separator: '; ' })
+      });
+      if (dateLabel === 'today') appendNoteDisplay(note);
+      transcript.classList.remove('visible');
+      pendingEntry = null;
+      setStatus('');
+      showToast('Note saved ✓');
+    } catch (err) {
+      setStatus('Failed to save note. Check your connection.', true);
     }
   }
 </script>
