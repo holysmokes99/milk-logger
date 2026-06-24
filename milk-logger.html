@@ -271,6 +271,16 @@
   .btn-yes { background: var(--moss); color: #fff; }
   .btn-no  { background: var(--cream); color: var(--bark); }
 
+  .sheet-link {
+    font-size: 13px;
+    color: var(--moss);
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    padding: 4px 0;
+  }
+  .sheet-link:active { opacity: 0.7; }
+
   .change-key {
     font-size: 12px; color: var(--fog);
     background: none; border: none;
@@ -398,6 +408,7 @@
         <button class="btn-confirm btn-yes" id="btnYes">Save ✓</button>
       </div>
     </div>
+    <a href="https://docs.google.com/spreadsheets/d/1klXVihOLlx78m5z-rT1qRWKvdSlNdWpT9f_e_npqKJU/edit" target="_blank" class="sheet-link">Open Google Sheet ↗</a>
     <button class="change-key" id="changeKeyBtn">Change API key</button>
   </div>
 </div>
