@@ -408,7 +408,7 @@
         <button class="btn-confirm btn-yes" id="btnYes">Save ✓</button>
       </div>
     </div>
-    <a href="https://docs.google.com/spreadsheets/d/1klXVihOLlx78m5z-rT1qRWKvdSlNdWpT9f_e_npqKJU/edit?gid=0#gid=0" target="_blank" class="sheet-link">Open Google Sheet ↗</a>
+    <button onclick="openSheet()" class="sheet-link">Open Google Sheet ↗</button>
     <button class="change-key" id="changeKeyBtn">Change API key</button>
   </div>
 </div>
@@ -725,6 +725,11 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     } catch (err) {
       setStatus('Failed to save note. Check your connection.', true);
     }
+  }
+  function openSheet() {
+    var row = todayRow();
+    var url = "https://docs.google.com/spreadsheets/d/1klXVihOLlx78m5z-rT1qRWKvdSlNdWpT9f_e_npqKJU/edit#gid=0&range=A" + row;
+    window.open(url, "_blank");
   }
 </script>
 </body>
