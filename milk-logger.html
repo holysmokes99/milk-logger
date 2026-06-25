@@ -281,6 +281,47 @@
   }
   .sheet-link:active { opacity: 0.7; }
 
+  .edit-form {
+    width: 100%;
+    background: var(--cream);
+    border-radius: 10px;
+    padding: 14px;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .edit-form.visible { display: flex; }
+
+  .edit-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .edit-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--fog);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .edit-input, .edit-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #E0D8CE;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--bark);
+    background: var(--milk);
+    outline: none;
+  }
+  .edit-input:focus, .edit-select:focus { border-color: var(--moss); }
+
+  .confirm-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .btn-edit { background: #EDE8E0; color: var(--bark); }
+
   .change-key {
     font-size: 12px; color: var(--fog);
     background: none; border: none;
@@ -405,8 +446,10 @@
       <div class="confirm-text" id="confirmText"></div>
       <div class="confirm-actions">
         <button class="btn-confirm btn-no" id="btnNo">Try again</button>
+        <button class="btn-confirm btn-edit" id="btnEdit">Edit</button>
         <button class="btn-confirm btn-yes" id="btnYes">Save ✓</button>
       </div>
+      <div class="edit-form" id="editForm"></div>
     </div>
     <a href="https://docs.google.com/spreadsheets/d/1klXVihOLlx78m5z-rT1qRWKvdSlNdWpT9f_e_npqKJU/edit" target="_blank" class="sheet-link">Open Google Sheet ↗</a>
     <button class="change-key" id="changeKeyBtn">Change API key</button>
@@ -682,8 +725,63 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     setStatus('');
   });
 
+  document.getElementById('btnEdit').addEventListener('click', () => {
+    const form = document.getElementById('editForm');
+    if (!pendingEntry) return;
+
+    if (pendingEntry.type === 'milk') {
+      form.innerHTML = `
+        <div class="edit-row">
+          <div class="edit-label">Cow</div>
+          <select class="edit-select" id="editCow">
+            <option value="poppy" ${pendingEntry.cow === 'poppy' ? 'selected' : ''}>Poppy</option>
+            <option value="aurora" ${pendingEntry.cow === 'aurora' ? 'selected' : ''}>Aurora Rose</option>
+          </select>
+        </div>
+        <div class="edit-row">
+          <div class="edit-label">Session</div>
+          <select class="edit-select" id="editSession">
+            <option value="am" ${pendingEntry.session === 'am' ? 'selected' : ''}>AM</option>
+            <option value="pm" ${pendingEntry.session === 'pm' ? 'selected' : ''}>PM</option>
+          </select>
+        </div>
+        <div class="edit-row">
+          <div class="edit-label">Amount (kg)</div>
+          <input class="edit-input" id="editKg" type="number" step="0.1" min="0" value="${pendingEntry.kg}" />
+        </div>`;
+    } else {
+      form.innerHTML = `
+        <div class="edit-row">
+          <div class="edit-label">Note</div>
+          <input class="edit-input" id="editNote" type="text" value="${pendingEntry.note}" />
+        </div>`;
+    }
+
+    form.classList.add('visible');
+  });
+
   document.getElementById('btnYes').addEventListener('click', async () => {
     if (!pendingEntry) return;
+
+    // Apply any edits from the form if it's open
+    const form = document.getElementById('editForm');
+    if (form.classList.contains('visible')) {
+      if (pendingEntry.type === 'milk') {
+        const cow     = document.getElementById('editCow').value;
+        const session = document.getElementById('editSession').value;
+        const kg      = parseFloat(document.getElementById('editKg').value);
+        if (isNaN(kg) || kg <= 0) { setStatus('Please enter a valid amount.', true); return; }
+        const col = COL[cow]?.[session];
+        if (!col) { setStatus('Invalid cow or session.', true); return; }
+        pendingEntry = { ...pendingEntry, cow, session, kg, col };
+      } else {
+        const note = document.getElementById('editNote').value.trim();
+        if (!note) { setStatus('Note cannot be empty.', true); return; }
+        pendingEntry = { ...pendingEntry, note };
+      }
+      form.classList.remove('visible');
+    }
+
     pendingEntry.type === 'milk' ? await saveMilk(pendingEntry) : await saveNote(pendingEntry);
   });
 
