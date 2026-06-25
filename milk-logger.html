@@ -446,7 +446,7 @@
   <div class="voice-wrap">
     <button id="voiceBtn">
       <span class="btn-icon">🎙️</span>
-      <span id="btnLabel">Record milking info</span>
+      <span id="btnLabel">Record info</span>
     </button>
     <div id="transcript"></div>
     <div id="statusMsg"></div>
@@ -625,12 +625,12 @@
 
   recognition && (recognition.onend = () => {
     voiceBtn.classList.remove('listening');
-    btnLabel.textContent = 'Record milking info';
+    btnLabel.textContent = 'Record info';
   });
 
   recognition && (recognition.onerror = (e) => {
     voiceBtn.classList.remove('listening');
-    btnLabel.textContent = 'Record milking info';
+    btnLabel.textContent = 'Record info';
     setStatus('Microphone error: ' + e.error, true);
   });
 
