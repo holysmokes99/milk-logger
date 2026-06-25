@@ -750,11 +750,17 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
           <input class="edit-input" id="editKg" type="number" step="0.1" min="0" value="${pendingEntry.kg}" />
         </div>`;
     } else {
-      form.innerHTML = `
-        <div class="edit-row">
-          <div class="edit-label">Note</div>
-          <input class="edit-input" id="editNote" type="text" value="${pendingEntry.note}" />
-        </div>`;
+      const noteInput = document.createElement('div');
+      noteInput.className = 'edit-row';
+      noteInput.innerHTML = '<div class="edit-label">Note</div>';
+      const input = document.createElement('input');
+      input.className = 'edit-input';
+      input.id = 'editNote';
+      input.type = 'text';
+      input.value = pendingEntry.note;
+      noteInput.appendChild(input);
+      form.innerHTML = '';
+      form.appendChild(noteInput);
     }
 
     form.classList.add('visible');
