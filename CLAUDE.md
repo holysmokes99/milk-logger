@@ -68,3 +68,17 @@ The repo must remain **public** for GitHub Pages to work on the free plan. The A
 ## No build or test commands
 
 Open `milk-logger.html` directly in a browser to run the app. No server, build tool, or test suite exists.
+
+## Important: Apps Script and Sheet structure are tightly coupled
+
+The Apps Script validation whitelist and the `COL` constant in `milk-logger.html`
+must always be kept in sync with the actual Google Sheet column layout.
+
+If any of the following change, **both** the HTML file and the Apps Script
+must be updated together:
+- Column positions for Poppy AM/PM, Aurora AM/PM, or Notes
+- The starting row for January 1 (`JAN1_ROW`)
+- The valid row range (currently 3–368 for all of 2026)
+
+Always remind the user to redeploy the Apps Script (Deploy → Manage deployments
+→ edit → New version → Deploy) after any Apps Script changes.

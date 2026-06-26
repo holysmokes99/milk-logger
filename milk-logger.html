@@ -657,7 +657,7 @@ Respond with:
 {"type":"note","note":"the note text cleaned up","date":"today" or "yesterday" or "YYYY-MM-DD"}
 
 Rules:
-- Assume AM if morning context, PM if afternoon/evening context. If truly ambiguous, default to AM.
+- Assume AM if morning context, PM if afternoon/evening context. If truly ambiguous, respond: {"error":"Was this the morning (AM) or afternoon/evening (PM) milking? Please try again."}
 - For dates: use "today" if no date mentioned, "yesterday" if they say yesterday, otherwise YYYY-MM-DD using year ${currentYear}.
 - For notes, clean up naturally — remove filler phrases like "add a note that", "note that", "please note" — keep the meaningful content. Preserve any cow names mentioned in the note text itself.
 - If nothing useful can be extracted, respond: {"error":"brief reason"}
@@ -691,7 +691,7 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
       const raw    = data.content?.[0]?.text?.trim() || '';
       const parsed = JSON.parse(raw);
 
-      if (parsed.error) { setStatus('Couldn\'t understand: ' + parsed.error, true); return; }
+      if (parsed.error) { setStatus(parsed.error, true); return; }
 
       const date      = parseDate(parsed.date);
       const dateLabel = formatDateLabel(date);
@@ -839,6 +839,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     }
   }
 </script>
-  <div class="footer">App last edited: June 25, 2026 4:12PM</div>
+  <div class="footer">App last edited: June 25, 2026 9:13PM</div>
 </body>
 </html>
