@@ -661,6 +661,7 @@ Rules:
 - For dates: use "today" if no date mentioned, "yesterday" if they say yesterday, otherwise YYYY-MM-DD using year ${currentYear}.
 - For notes, clean up naturally — remove filler phrases like "add a note that", "note that", "please note" — keep the meaningful content. Preserve any cow names mentioned in the note text itself.
 - If nothing useful can be extracted, respond: {"error":"brief reason"}
+- All JSON string values must be valid JSON. Escape any double quotes inside strings as \" and backslashes as \\. Never use unescaped double quotes inside a string value.
 
 Respond ONLY with a JSON object, no markdown, no explanation.`;
 
@@ -688,8 +689,33 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
         return;
       }
 
-      const raw    = data.content?.[0]?.text?.trim() || '';
-      const parsed = JSON.parse(raw);
+      const raw = data.content?.[0]?.text?.trim() || '';
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (_) {
+        // Fallback regex extraction for malformed JSON (e.g. unescaped quotes in note text)
+        const typeMatch = raw.match(/"type"\s*:\s*"(\w+)"/);
+        const errMatch  = raw.match(/"error"\s*:\s*"([^"]+)"/);
+        if (errMatch) {
+          parsed = { error: errMatch[1] };
+        } else if (typeMatch?.[1] === 'milk') {
+          const cow     = raw.match(/"cow"\s*:\s*"(\w+)"/)?.[1];
+          const session = raw.match(/"session"\s*:\s*"(\w+)"/)?.[1];
+          const kg      = parseFloat(raw.match(/"kg"\s*:\s*([\d.]+)/)?.[1]);
+          const date    = raw.match(/"date"\s*:\s*"([^"]+)"/)?.[1] || 'today';
+          if (cow && session && !isNaN(kg)) parsed = { type: 'milk', cow, session, kg, date };
+        } else if (typeMatch?.[1] === 'note') {
+          // Grab everything after "note": " and strip the trailing JSON structure
+          const afterNote = raw.match(/"note"\s*:\s*"([\s\S]+)/)?.[1];
+          const date      = raw.match(/"date"\s*:\s*"([^"]+)"/)?.[1] || 'today';
+          if (afterNote) {
+            const note = afterNote.replace(/",?\s*"date"[\s\S]*$/, '').replace(/"\s*}?\s*$/, '').trim();
+            if (note) parsed = { type: 'note', note, date };
+          }
+        }
+        if (!parsed) { setStatus('Could not parse response — please try again.', true); return; }
+      }
 
       if (parsed.error) { setStatus(parsed.error, true); return; }
 
@@ -839,6 +865,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     }
   }
 </script>
-  <div class="footer">App last edited: June 25, 2026 9:13PM</div>
+  <div class="footer">App last edited: June 29, 2026 5:53PM</div>
 </body>
 </html>
