@@ -96,3 +96,14 @@ Current glossary terms:
 - **mL** — millilitres (she says "mills"; e.g. "10 mills" → "10 mL")
 
 To add a new term, find the glossary block in the `systemPrompt` constant inside `parseWithClaude()` and add a new bullet following the same format.
+
+## Version numbering and cache busting
+
+To force iOS PWA cache refresh on installed devices, a version number is maintained in two places — **both must be updated on every release**:
+
+1. `manifest.json` — the `"version"` field (e.g. `"version": "1.0.7"`)
+2. `milk-logger.html` — two places:
+   - The manifest link tag: `<link rel="manifest" href="manifest.json?v=1.0.7">`
+   - The footer text: `App last edited: [date] [time] · v1.0.7`
+
+Increment the patch version (third number) for small changes, the minor version (second number) for significant new features. Always ask the user for the current time when updating the footer.
