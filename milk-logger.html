@@ -330,6 +330,26 @@
     text-align: center;
   }
 
+  .edit-date {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .edit-date input[type="date"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #E0D8CE;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--bark);
+    background: var(--milk);
+    outline: none;
+  }
+
+  .edit-date input[type="date"]:focus { border-color: var(--moss); }
+
   .change-key {
     font-size: 12px; color: var(--fog);
     background: none; border: none;
@@ -657,11 +677,10 @@ Respond with:
 {"type":"note","note":"the note text cleaned up","date":"today" or "yesterday" or "YYYY-MM-DD"}
 
 Rules:
-- Assume AM if morning context, PM if afternoon/evening context. If truly ambiguous, respond: {"error":"Was this the morning (AM) or afternoon/evening (PM) milking? Please try again."}
+- Assume AM if morning context, PM if afternoon/evening context. If truly ambiguous, default to AM.
 - For dates: use "today" if no date mentioned, "yesterday" if they say yesterday, otherwise YYYY-MM-DD using year ${currentYear}.
 - For notes, clean up naturally — remove filler phrases like "add a note that", "note that", "please note" — keep the meaningful content. Preserve any cow names mentioned in the note text itself.
 - If nothing useful can be extracted, respond: {"error":"brief reason"}
-- All JSON string values must be valid JSON. Escape any double quotes inside strings as \" and backslashes as \\. Never use unescaped double quotes inside a string value.
 
 Respond ONLY with a JSON object, no markdown, no explanation.`;
 
@@ -689,35 +708,10 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
         return;
       }
 
-      const raw = data.content?.[0]?.text?.trim() || '';
-      let parsed;
-      try {
-        parsed = JSON.parse(raw);
-      } catch (_) {
-        // Fallback regex extraction for malformed JSON (e.g. unescaped quotes in note text)
-        const typeMatch = raw.match(/"type"\s*:\s*"(\w+)"/);
-        const errMatch  = raw.match(/"error"\s*:\s*"([^"]+)"/);
-        if (errMatch) {
-          parsed = { error: errMatch[1] };
-        } else if (typeMatch?.[1] === 'milk') {
-          const cow     = raw.match(/"cow"\s*:\s*"(\w+)"/)?.[1];
-          const session = raw.match(/"session"\s*:\s*"(\w+)"/)?.[1];
-          const kg      = parseFloat(raw.match(/"kg"\s*:\s*([\d.]+)/)?.[1]);
-          const date    = raw.match(/"date"\s*:\s*"([^"]+)"/)?.[1] || 'today';
-          if (cow && session && !isNaN(kg)) parsed = { type: 'milk', cow, session, kg, date };
-        } else if (typeMatch?.[1] === 'note') {
-          // Grab everything after "note": " and strip the trailing JSON structure
-          const afterNote = raw.match(/"note"\s*:\s*"([\s\S]+)/)?.[1];
-          const date      = raw.match(/"date"\s*:\s*"([^"]+)"/)?.[1] || 'today';
-          if (afterNote) {
-            const note = afterNote.replace(/",?\s*"date"[\s\S]*$/, '').replace(/"\s*}?\s*$/, '').trim();
-            if (note) parsed = { type: 'note', note, date };
-          }
-        }
-        if (!parsed) { setStatus('Could not parse response — please try again.', true); return; }
-      }
+      const raw    = data.content?.[0]?.text?.trim() || '';
+      const parsed = JSON.parse(raw);
 
-      if (parsed.error) { setStatus(parsed.error, true); return; }
+      if (parsed.error) { setStatus('Couldn\'t understand: ' + parsed.error, true); return; }
 
       const date      = parseDate(parsed.date);
       const dateLabel = formatDateLabel(date);
@@ -727,13 +721,13 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
         const { cow, session, kg } = parsed;
         const col = COL[cow]?.[session];
         if (!col) { setStatus('Unknown cow or session.', true); return; }
-        pendingEntry = { type: 'milk', cow, session, kg, row, col, dateLabel };
+        pendingEntry = { type: 'milk', cow, session, kg, row, col, dateLabel, date };
         const cowLabel = cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
         document.getElementById('confirmText').innerHTML =
           `Save <strong>${kg} kg</strong> for <strong>${cowLabel} ${session.toUpperCase()}</strong> — <strong>${dateLabel}</strong>?`;
 
       } else if (parsed.type === 'note') {
-        pendingEntry = { type: 'note', note: parsed.note, row, col: COL.notes, dateLabel };
+        pendingEntry = { type: 'note', note: parsed.note, row, col: COL.notes, dateLabel, date };
         document.getElementById('confirmText').innerHTML =
           `Add note for <strong>${dateLabel}</strong>:<br><br><em>"${parsed.note}"</em>`;
       }
@@ -764,6 +758,7 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     if (!pendingEntry) return;
 
     if (pendingEntry.type === 'milk') {
+      const entryDate = pendingEntry.date ? pendingEntry.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       form.innerHTML = `
         <div class="edit-row">
           <div class="edit-label">Cow</div>
@@ -782,8 +777,13 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
         <div class="edit-row">
           <div class="edit-label">Amount (kg)</div>
           <input class="edit-input" id="editKg" type="number" step="0.1" min="0" value="${pendingEntry.kg}" />
+        </div>
+        <div class="edit-date">
+          <div class="edit-label">Date</div>
+          <input type="date" id="editDate" value="${entryDate}" />
         </div>`;
     } else {
+      const entryDateNote = pendingEntry.date ? pendingEntry.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       const noteInput = document.createElement('div');
       noteInput.className = 'edit-row';
       noteInput.innerHTML = '<div class="edit-label">Note</div>';
@@ -793,8 +793,12 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
       input.type = 'text';
       input.value = pendingEntry.note;
       noteInput.appendChild(input);
+      const dateRow = document.createElement('div');
+      dateRow.className = 'edit-date';
+      dateRow.innerHTML = '<div class="edit-label">Date</div><input type="date" id="editDate" value="' + entryDateNote + '" />';
       form.innerHTML = '';
       form.appendChild(noteInput);
+      form.appendChild(dateRow);
     }
 
     form.classList.add('visible');
@@ -806,6 +810,16 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     // Apply any edits from the form if it's open
     const form = document.getElementById('editForm');
     if (form.classList.contains('visible')) {
+      // Read edited date if present
+      const editDateEl = document.getElementById('editDate');
+      if (editDateEl && editDateEl.value) {
+        const [y, m, d] = editDateEl.value.split('-').map(Number);
+        const editedDate = new Date(y, m - 1, d);
+        pendingEntry.date = editedDate;
+        pendingEntry.row = dateToRow(editedDate);
+        pendingEntry.dateLabel = formatDateLabel(editedDate);
+      }
+
       if (pendingEntry.type === 'milk') {
         const cow     = document.getElementById('editCow').value;
         const session = document.getElementById('editSession').value;
@@ -865,6 +879,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     }
   }
 </script>
-  <div class="footer">App last edited: June 29, 2026 5:53PM</div>
+  <div class="footer">App last edited: June 25, 2026 11:15AM</div>
 </body>
 </html>
