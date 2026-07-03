@@ -682,6 +682,13 @@ Rules:
 - For notes, clean up naturally — remove filler phrases like "add a note that", "note that", "please note" — keep the meaningful content. Preserve any cow names mentioned in the note text itself.
 - If nothing useful can be extracted, respond: {"error":"brief reason"}
 
+Farm/veterinary glossary — these are real terms used on this farm. Preserve them exactly and correct common speech-to-text mishearings:
+- "Domcol" (teat dip product; may be heard as "dom call", "dom col", "dom coal")
+- "Metacam" (pain medication; may be heard as "meta cam", "meta come", "meta com")
+- "Spectramast" (antibiotic; may be heard as "spectra mast", "spectra must", "spectra mass")
+- "mL" (millilitres; may be heard as "mills", "mils", "mil"). When a number is followed by "mills", "mils", or "mil", convert to "mL" e.g. "10 mills" → "10 mL".
+When any of these appear in mangled form in the transcript, correct them to the proper spelling in the note output.
+
 Respond ONLY with a JSON object, no markdown, no explanation.`;
 
     try {
@@ -879,6 +886,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     }
   }
 </script>
-  <div class="footer">App last edited: July 3, 2026 2:58PM</div>
+  <div class="footer">App last edited: July 3, 2026 3:12PM</div>
 </body>
 </html>

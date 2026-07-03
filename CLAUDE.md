@@ -82,3 +82,17 @@ must be updated together:
 
 Always remind the user to redeploy the Apps Script (Deploy → Manage deployments
 → edit → New version → Deploy) after any Apps Script changes.
+
+## Farm/veterinary glossary
+
+The Claude system prompt inside `parseWithClaude()` contains a glossary of domain-specific terms that speech recognition commonly mishears. When adding new terms, update the glossary section in the system prompt with:
+- The correct spelling and what it is
+- Common mishearings to correct from
+
+Current glossary terms:
+- **Domcol** — teat dip product
+- **Metacam** — pain medication  
+- **Spectramast** — antibiotic
+- **mL** — millilitres (she says "mills"; e.g. "10 mills" → "10 mL")
+
+To add a new term, find the glossary block in the `systemPrompt` constant inside `parseWithClaude()` and add a new bullet following the same format.
