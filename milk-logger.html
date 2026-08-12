@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.8">
+<link rel="manifest" href="manifest.json?v=1.0.9">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -556,12 +556,17 @@
   }
 
   function parseDate(dateStr) {
-    if (!dateStr || dateStr === 'today') return new Date();
+    const today = new Date();
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    if (!dateStr || dateStr === 'today') return todayOnly;
     if (dateStr === 'yesterday') {
-      const d = new Date(); d.setDate(d.getDate() - 1); return d;
+      const d = new Date(todayOnly); d.setDate(d.getDate() - 1); return d;
     }
     const [y, m, day] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, day);
+    const parsed = new Date(y, m - 1, day);
+    // Sanity check: never allow future dates — fall back to today
+    return parsed > todayOnly ? todayOnly : parsed;
   }
 
   function formatDateLabel(date) {
@@ -678,7 +683,7 @@ Respond with:
 
 Rules:
 - Assume AM if morning context, PM if afternoon/evening context. If truly ambiguous, default to AM.
-- For dates: use "today" if no date mentioned, "yesterday" if they say yesterday, otherwise YYYY-MM-DD using year ${currentYear}.
+- For dates: the date refers to when the entry is being RECORDED, not when events described in the note will happen or are happening. Always default to "today" unless the speaker explicitly says "yesterday" or names a specific past date. Words like "tonight", "overnight", "this morning", "later", or descriptions of future actions NEVER change the date — they are part of the note content only. Never return a future date.
 - For notes, clean up naturally — remove filler phrases like "add a note that", "note that", "please note" — keep the meaningful content. Preserve any cow names mentioned in the note text itself.
 - If nothing useful can be extracted, respond: {"error":"brief reason"}
 
@@ -716,8 +721,14 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
         return;
       }
 
-      const raw    = data.content?.[0]?.text?.trim() || '';
-      const parsed = JSON.parse(raw);
+      const raw = data.content?.[0]?.text?.trim() || '';
+      // Extract JSON object robustly in case Claude wraps it in extra text or markdown
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        setStatus('Could not understand response. Try again.', true);
+        return;
+      }
+      const parsed = JSON.parse(jsonMatch[0]);
 
       if (parsed.error) { setStatus('Couldn\'t understand: ' + parsed.error, true); return; }
 
@@ -887,6 +898,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     }
   }
 </script>
-  <div class="footer">App last edited: July 3, 2026 5:12PM · v1.0.8</div>
+  <div class="footer">App last edited: Aug 12, 2026 8:11AM · v1.0.9</div>
 </body>
 </html>
