@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.15">
+<link rel="manifest" href="manifest.json?v=1.0.16">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -551,38 +551,48 @@
 
   async function loadTodayData() {
     const row = todayRow();
-    const cells = [
-      { id: 'poppy-am',   col: 11 },
-      { id: 'poppy-pm',   col: 12 },
-      { id: 'aurora-am',  col: 14 },
-      { id: 'aurora-pm',  col: 15 },
-      { id: 'notes',      col: 17 },
-    ];
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'readRow',
+          row,
+          cols: [11, 12, 14, 15, 17]
+        }),
+        redirect: 'follow'
+      });
 
-    for (const cell of cells) {
-      try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'read', row, col: cell.col }),
-          redirect: 'follow'
-        });
-        const data = await res.json();
-        if (data.value !== null && data.value !== undefined && data.value !== '' && data.value !== 0) {
-          if (cell.id === 'notes') {
-            // Set notes directly rather than appending to avoid duplicating separator
-            const notesEl = document.getElementById('daily-notes');
-            notesEl.classList.remove('empty');
-            notesEl.textContent = data.value;
-          } else {
-            const [cow, session] = cell.id.split('-');
-            updateMilkCard(cow, session, data.value);
-          }
-        }
-      } catch (err) {
-        // Silently fail — app still works without pre-loaded data
-        console.log('Could not load cell ' + cell.id + ':', err);
+      const text = await res.text();
+      console.log('loadTodayData raw response:', text);
+
+      const data = JSON.parse(text);
+      if (!data.success) {
+        console.log('loadTodayData error:', data.message);
+        return;
       }
+
+      const map = {
+        11: { type: 'milk', cow: 'poppy',  session: 'am' },
+        12: { type: 'milk', cow: 'poppy',  session: 'pm' },
+        14: { type: 'milk', cow: 'aurora', session: 'am' },
+        15: { type: 'milk', cow: 'aurora', session: 'pm' },
+        17: { type: 'notes' },
+      };
+
+      for (const [col, info] of Object.entries(map)) {
+        const value = data.values[col];
+        if (value === null || value === undefined || value === '' || value === 0) continue;
+        if (info.type === 'milk') {
+          updateMilkCard(info.cow, info.session, value);
+        } else {
+          const notesEl = document.getElementById('daily-notes');
+          notesEl.classList.remove('empty');
+          notesEl.textContent = value;
+        }
+      }
+    } catch (err) {
+      console.log('loadTodayData failed:', err);
     }
   }
 
@@ -964,6 +974,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     });
   }
 </script>
-  <div class="footer">App last edited: Aug 13, 2026 6:28PM · v1.0.15</div>
+  <div class="footer">App last edited: Aug 13, 2026 6:45PM · v1.0.16</div>
 </body>
 </html>
