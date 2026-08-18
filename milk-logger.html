@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.17">
+<link rel="manifest" href="manifest.json?v=1.0.19">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -584,7 +584,7 @@
         } else {
           const notesEl = document.getElementById('daily-notes');
           notesEl.classList.remove('empty');
-          notesEl.textContent = value;
+          notesEl.textContent = value.toString().replace(/;\s*$/, '').trim();
         }
       }
     } catch (err) {
@@ -777,12 +777,21 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
 
       const raw = data.content?.[0]?.text?.trim() || '';
       // Extract JSON object robustly in case Claude wraps it in extra text or markdown
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        setStatus('Could not understand response. Try again.', true);
-        return;
+      // Extract first valid JSON object from response
+      let parsed;
+      try {
+        const jsonMatch = raw.match(/\{[^{}]*\}/);
+        if (!jsonMatch) throw new Error('No JSON found');
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch(jsonErr) {
+        // Try full response as fallback
+        try {
+          parsed = JSON.parse(raw);
+        } catch(e) {
+          setStatus('Could not understand response. Please try again.', true);
+          return;
+        }
       }
-      const parsed = JSON.parse(jsonMatch[0]);
 
       if (parsed.error) { setStatus('Couldn\'t understand: ' + parsed.error, true); return; }
 
@@ -970,6 +979,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     });
   }
 </script>
-  <div class="footer">App last edited: Aug 13, 2026 7:00PM · v1.0.17</div>
+  <div class="footer">App last edited: Aug 18, 2026 8:11AM · v1.0.19</div>
 </body>
 </html>
