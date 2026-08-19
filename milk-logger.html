@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.19">
+<link rel="manifest" href="manifest.json?v=1.0.20">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -431,6 +431,7 @@
 <div id="mainApp">
   <div class="cows">
     <div class="cow-card">
+      <button class="card-edit-btn" onclick="openCardEdit('poppy')">Edit</button>
       <div class="cow-name">Poppy</div>
       <div class="sessions">
         <div class="session">
@@ -444,6 +445,7 @@
       </div>
     </div>
     <div class="cow-card">
+      <button class="card-edit-btn" onclick="openCardEdit('aurora')">Edit</button>
       <div class="cow-name">Aurora Rose</div>
       <div class="sessions">
         <div class="session">
@@ -459,6 +461,7 @@
   </div>
 
   <div class="notes-card">
+    <button class="card-edit-btn" onclick="openCardEdit('notes')">Edit</button>
     <div class="notes-label">Today's Notes</div>
     <div id="daily-notes" class="empty">No notes yet</div>
   </div>
@@ -502,6 +505,7 @@
   // ── State ─────────────────────────────────────────────────────────────────
   let ANTHROPIC_KEY = '';
   let pendingEntry  = null;
+  let editMode      = false; // true when user tapped Edit before saving
 
   // ── Help modal ────────────────────────────────────────────────────────────
   const helpOverlay = document.getElementById('helpOverlay');
@@ -833,11 +837,13 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     hideConfirm();
     transcript.classList.remove('visible');
     setStatus('');
+    editMode = false;
   });
 
   document.getElementById('btnEdit').addEventListener('click', () => {
     const form = document.getElementById('editForm');
     if (!pendingEntry) return;
+    editMode = true;
 
     if (pendingEntry.type === 'milk') {
       const entryDate = pendingEntry.date ? pendingEntry.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
@@ -933,9 +939,14 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
       });
       if (dateLabel === 'today') updateMilkCard(cow, session, kg);
       transcript.classList.remove('visible');
+      if (editMode) {
+        showSummary('milk', { cow, session, kg, dateLabel });
+        editMode = false;
+      } else {
+        showToast('Saved ✓');
+      }
       pendingEntry = null;
       setStatus('');
-      showToast('Saved ✓');
     } catch (err) {
       setStatus('Failed to save. Check your connection.', true);
     }
@@ -953,13 +964,93 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
       });
       if (dateLabel === 'today') appendNoteDisplay(note);
       transcript.classList.remove('visible');
+      if (editMode) {
+        showSummary('note', { note, dateLabel });
+        editMode = false;
+      } else {
+        showToast('Note saved ✓');
+      }
       pendingEntry = null;
       setStatus('');
-      showToast('Note saved ✓');
     } catch (err) {
       setStatus('Failed to save note. Check your connection.', true);
     }
   }
+  // ── Summary modal ────────────────────────────────────────────────────────────
+  function showSummary(type, data) {
+    const overlay = document.getElementById('summaryOverlay');
+    const rows    = document.getElementById('summaryRows');
+    const title   = document.getElementById('summaryTitle');
+
+    rows.innerHTML = '';
+    if (type === 'milk') {
+      title.textContent = 'Saved — Milk Entry';
+      const cowLabel = data.cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
+      const items = [
+        { key: 'Cow',     val: cowLabel },
+        { key: 'Session', val: data.session.toUpperCase() },
+        { key: 'Amount',  val: data.kg + ' kg' },
+        { key: 'Date',    val: data.dateLabel.charAt(0).toUpperCase() + data.dateLabel.slice(1) },
+      ];
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'summary-row';
+        row.innerHTML = '<span class="summary-key">' + item.key + '</span><span class="summary-val">' + item.val + '</span>';
+        rows.appendChild(row);
+      });
+    } else {
+      title.textContent = 'Saved — Note';
+      const items = [
+        { key: 'Date', val: data.dateLabel.charAt(0).toUpperCase() + data.dateLabel.slice(1) },
+        { key: 'Note', val: data.note },
+      ];
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'summary-row';
+        row.innerHTML = '<span class="summary-key">' + item.key + '</span><span class="summary-val">' + item.val + '</span>';
+        rows.appendChild(row);
+      });
+    }
+    overlay.classList.add('visible');
+  }
+
+  document.getElementById('btnDismiss').addEventListener('click', () => {
+    document.getElementById('summaryOverlay').classList.remove('visible');
+  });
+
+  // ── Card edit buttons ─────────────────────────────────────────────────────────
+  function openCardEdit(target) {
+    const row       = todayRow();
+    const dateLabel = 'today';
+    const date      = new Date();
+
+    if (target === 'notes') {
+      const currentNote = document.getElementById('daily-notes').textContent;
+      const hasNote = currentNote && currentNote !== 'No notes yet';
+      pendingEntry = {
+        type: 'note',
+        note: hasNote ? currentNote : '',
+        row, col: COL.notes, dateLabel, date
+      };
+      document.getElementById('confirmText').innerHTML =
+        'Edit today's <strong>notes</strong>:';
+    } else {
+      const cow = target; // 'poppy' or 'aurora'
+      const cowLabel = cow === 'poppy' ? 'Poppy' : 'Aurora Rose';
+      pendingEntry = {
+        type: 'milk', cow, session: 'am', kg: 0,
+        row, col: COL[cow].am, dateLabel, date
+      };
+      document.getElementById('confirmText').innerHTML =
+        'Edit today's milk for <strong>' + cowLabel + '</strong>:';
+    }
+
+    // Show confirm box and immediately open edit form
+    document.getElementById('confirmBox').classList.add('visible');
+    editMode = true;
+    document.getElementById('btnEdit').click();
+  }
+
   // ── Service Worker registration ──────────────────────────────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -979,6 +1070,15 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     });
   }
 </script>
-  <div class="footer">App last edited: Aug 18, 2026 8:11AM · v1.0.19</div>
+  <!-- Post-save summary modal -->
+  <div class="summary-overlay" id="summaryOverlay">
+    <div class="summary-card">
+      <div class="summary-title" id="summaryTitle">Saved</div>
+      <div class="summary-rows" id="summaryRows"></div>
+      <button class="btn-dismiss" id="btnDismiss">Dismiss</button>
+    </div>
+  </div>
+
+  <div class="footer">App last edited: Aug 19, 2026 9:48AM · v1.0.20</div>
 </body>
 </html>
