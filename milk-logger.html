@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.22">
+<link rel="manifest" href="manifest.json?v=1.0.23">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -173,6 +173,7 @@
     border-radius: 16px;
     padding: 18px 20px;
     box-shadow: 0 1px 4px rgba(59,47,30,0.08);
+    position: relative;
   }
 
   .cow-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--moss); margin-bottom: 14px; }
@@ -192,6 +193,7 @@
     box-shadow: 0 1px 4px rgba(59,47,30,0.08);
     width: 100%;
     margin-bottom: 36px;
+    position: relative;
   }
   .notes-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--moss); margin-bottom: 8px; }
   #daily-notes { font-size: 13px; color: var(--bark); line-height: 1.5; font-style: italic; min-height: 18px; }
@@ -349,6 +351,75 @@
   }
 
   .edit-date input[type="date"]:focus { border-color: var(--moss); }
+
+  /* ── Summary modal overlay ── */
+  .summary-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(59,47,30,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+  .summary-overlay.visible { display: flex; }
+
+  .summary-card {
+    background: var(--milk);
+    border-radius: 20px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 8px 32px rgba(59,47,30,0.25);
+    border-top: 4px solid var(--moss);
+  }
+
+  .summary-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--moss);
+  }
+
+  .summary-rows { display: flex; flex-direction: column; gap: 8px; }
+
+  .summary-row {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .summary-key {
+    font-weight: 700;
+    color: var(--bark);
+    min-width: 70px;
+  }
+
+  .summary-val { color: var(--bark); }
+
+  .btn-dismiss {
+    width: 100%;
+    padding: 14px;
+    background: var(--moss);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
 
   .change-key {
     font-size: 12px; color: var(--fog);
@@ -1087,6 +1158,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     </div>
   </div>
 
-  <div class="footer">App last edited: Aug 19, 2026 10:30AM · v1.0.22</div>
+  <div class="footer">App last edited: Aug 19, 2026 11:00AM · v1.0.23</div>
 </body>
 </html>
