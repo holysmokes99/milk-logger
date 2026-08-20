@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.25">
+<link rel="manifest" href="manifest.json?v=1.0.26">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -329,7 +329,7 @@
   }
   .edit-input:focus, .edit-select:focus { border-color: var(--moss); }
 
-  .confirm-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .btn-edit { background: #EDE8E0; color: var(--bark); }
 
   .footer {
@@ -561,9 +561,9 @@
     <div class="confirm-box" id="confirmBox">
       <div class="confirm-text" id="confirmText"></div>
       <div class="confirm-actions">
-        <button class="btn-confirm btn-no" id="btnNo">Try again</button>
-        <button class="btn-confirm btn-edit" id="btnEdit">Edit</button>
+        <button class="btn-confirm btn-edit" id="btnEdit" style="display:none">Edit</button>
         <button class="btn-confirm btn-yes" id="btnYes">Save ✓</button>
+        <button class="btn-confirm btn-no" id="btnNo">Cancel</button>
       </div>
       <div class="edit-form" id="editForm"></div>
     </div>
@@ -1172,6 +1172,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     </div>
   </div>
 
-  <div class="footer">App last edited: Aug 19, 2026 11:35AM · v1.0.25</div>
+  <div class="footer">App last edited: Aug 19, 2026 5:45PM · v1.0.26</div>
 </body>
 </html>
