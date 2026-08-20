@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.31">
+<link rel="manifest" href="manifest.json?v=1.0.32">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -651,6 +651,7 @@
   let ANTHROPIC_KEY = '';
   let pendingEntry  = null;
   let editMode      = false; // true when user tapped Edit before saving
+  let viewedDate    = new Date(); // the date currently being viewed
 
   // ── Help modal ────────────────────────────────────────────────────────────
   const helpOverlay = document.getElementById('helpOverlay');
@@ -683,9 +684,7 @@
     showMainApp();
   }
 
-  // ── Day navigation state ─────────────────────────────────────────────────
-  let viewedDate = new Date(); // the date currently being viewed
-
+  // ── Day navigation helpers ────────────────────────────────────────────────
   function isToday(date) {
     const t = new Date();
     return date.getFullYear() === t.getFullYear() &&
@@ -1301,6 +1300,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     </div>
   </div>
 
-  <div class="footer">App last edited: Aug 19, 2026 7:00PM · v1.0.31</div>
+  <div class="footer">App last edited: Aug 19, 2026 7:15PM · v1.0.32</div>
 </body>
 </html>
