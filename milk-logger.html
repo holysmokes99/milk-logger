@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.30">
+<link rel="manifest" href="manifest.json?v=1.0.31">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -118,6 +118,59 @@
     margin-bottom: 6px;
     line-height: 1.4;
   }
+
+  /* ── Day navigation ── */
+  .day-nav {
+    width: 100%;
+    max-width: 420px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 8px;
+  }
+  .day-nav.visible { display: flex; }
+
+  .day-nav-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .day-nav-btn {
+    background: none;
+    border: 1.5px solid var(--fog);
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+    color: var(--bark);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .day-nav-btn:active { border-color: var(--moss); color: var(--moss); }
+  .day-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .today-btn {
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--moss);
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 6px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .today-btn:active { background: var(--cream); }
+  .today-btn.hidden { visibility: hidden; }
 
   /* ── Setup screen ── */
   #setupScreen {
@@ -453,10 +506,17 @@
 <header>
   <div class="header-left">
     <h1>🐄 Milk Log</h1>
-    <span class="date" id="dateLabel"></span>
   </div>
   <button id="helpBtn">?</button>
 </header>
+<div class="day-nav" id="dayNav">
+  <button class="day-nav-btn" id="btnPrevDay">&#8592;</button>
+  <div class="day-nav-center">
+    <span class="date" id="dateLabel"></span>
+    <button class="today-btn" id="btnToday">Today</button>
+  </div>
+  <button class="day-nav-btn" id="btnNextDay">&#8594;</button>
+</div>
 
 <!-- Help modal -->
 <div class="modal-overlay" id="helpOverlay">
@@ -623,9 +683,69 @@
     showMainApp();
   }
 
+  // ── Day navigation state ─────────────────────────────────────────────────
+  let viewedDate = new Date(); // the date currently being viewed
+
+  function isToday(date) {
+    const t = new Date();
+    return date.getFullYear() === t.getFullYear() &&
+           date.getMonth()    === t.getMonth() &&
+           date.getDate()     === t.getDate();
+  }
+
+  function dateToLocal(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function updateDayNav() {
+    const today = isToday(viewedDate);
+    document.getElementById('dateLabel').textContent =
+      viewedDate.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+    document.getElementById('btnNextDay').disabled = today;
+    document.getElementById('btnToday').classList.toggle('hidden', today);
+    // Show/hide Record info button
+    document.getElementById('voiceBtn').style.display = today ? '' : 'none';
+  }
+
+  function loadDateData(date) {
+    // Reset all cards to empty
+    ['poppy-am','poppy-pm','aurora-am','aurora-pm'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.add('empty');
+      el.innerHTML = '—<span class="unit"></span>';
+    });
+    const notesEl = document.getElementById('daily-notes');
+    notesEl.classList.add('empty');
+    notesEl.textContent = 'No notes yet';
+
+    viewedDate = dateToLocal(date);
+    updateDayNav();
+    loadTodayData();
+  }
+
+  document.getElementById('btnPrevDay').addEventListener('click', () => {
+    const d = new Date(viewedDate);
+    d.setDate(d.getDate() - 1);
+    loadDateData(d);
+  });
+
+  document.getElementById('btnNextDay').addEventListener('click', () => {
+    if (isToday(viewedDate)) return;
+    const d = new Date(viewedDate);
+    d.setDate(d.getDate() + 1);
+    loadDateData(d);
+  });
+
+  document.getElementById('btnToday').addEventListener('click', () => {
+    loadDateData(new Date());
+  });
+
   function showMainApp() {
     setupScreen.style.display = 'none';
     mainApp.classList.add('visible');
+    document.getElementById('dayNav').classList.add('visible');
+    viewedDate = dateToLocal(new Date());
+    updateDayNav();
     loadTodayData();
   }
 
@@ -728,8 +848,7 @@
     return date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
   }
 
-  document.getElementById('dateLabel').textContent =
-    new Date().toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+  // dateLabel is set by updateDayNav()
 
   // ── Display helpers ───────────────────────────────────────────────────────
   function setStatus(msg, isError = false) {
@@ -1115,9 +1234,9 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
 
   // ── Card edit buttons ─────────────────────────────────────────────────────────
   function openCardEdit(target) {
-    const row       = todayRow();
-    const dateLabel = 'today';
-    const date      = new Date();
+    const row       = dateToRow(viewedDate);
+    const dateLabel = formatDateLabel(viewedDate);
+    const date      = new Date(viewedDate);
 
     if (target === 'notes') {
       const currentNote = document.getElementById('daily-notes').textContent;
@@ -1182,6 +1301,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     </div>
   </div>
 
-  <div class="footer">App last edited: Aug 19, 2026 6:35PM · v1.0.30</div>
+  <div class="footer">App last edited: Aug 19, 2026 7:00PM · v1.0.31</div>
 </body>
 </html>
