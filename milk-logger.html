@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.27">
+<link rel="manifest" href="manifest.json?v=1.0.29">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
 
@@ -316,7 +316,7 @@
     text-transform: uppercase;
   }
 
-  .edit-input, .edit-select {
+  .edit-input, .edit-select, textarea.edit-input {
     width: 100%;
     padding: 10px 12px;
     border: 1.5px solid #E0D8CE;
@@ -969,10 +969,11 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
       const noteInput = document.createElement('div');
       noteInput.className = 'edit-row';
       noteInput.innerHTML = '<div class="edit-label">Note</div>';
-      const input = document.createElement('input');
+      const input = document.createElement('textarea');
       input.className = 'edit-input';
       input.id = 'editNote';
-      input.type = 'text';
+      input.rows = 4;
+      input.style.resize = 'vertical';
       input.value = pendingEntry.note;
       noteInput.appendChild(input);
       const dateRow = document.createElement('div');
@@ -1177,10 +1178,10 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     <div class="summary-card">
       <div class="summary-title" id="summaryTitle">Saved</div>
       <div class="summary-rows" id="summaryRows"></div>
-      <button class="btn-dismiss" id="btnDismiss" onclick="dismissSummary()">Dismiss</button>
+      <button class="btn-dismiss" id="btnDismiss" onclick="dismissSummary()">Close</button>
     </div>
   </div>
 
-  <div class="footer">App last edited: Aug 19, 2026 6:00PM · v1.0.27</div>
+  <div class="footer">App last edited: Aug 19, 2026 6:25PM · v1.0.29</div>
 </body>
 </html>
