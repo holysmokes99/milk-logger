@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.37">
+<link rel="manifest" href="manifest.json?v=1.0.39">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
@@ -413,6 +413,69 @@
   }
 
   .edit-date input[type="date"]:focus { border-color: var(--moss); }
+
+  /* ── Daily quote modal ── */
+  .quote-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(59,47,30,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 32px 24px;
+    box-sizing: border-box;
+  }
+  .quote-overlay.visible { display: flex; }
+
+  .quote-card {
+    background: var(--milk);
+    border-radius: 24px;
+    padding: 36px 28px 28px;
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(59,47,30,0.3);
+    border-top: 5px solid var(--hay);
+  }
+
+  .quote-text {
+    font-size: 18px;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--bark);
+    font-family: Georgia, serif;
+  }
+
+  .quote-text::before { content: '\201C'; }
+  .quote-text::after  { content: '\201D'; }
+
+  .quote-attribution {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fog);
+    letter-spacing: 0.5px;
+  }
+
+  .quote-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--moss);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    margin-top: 4px;
+  }
+  .quote-btn:active { opacity: 0.85; }
 
   /* ── Chart icon button ── */
   .chart-icon-btn {
@@ -871,6 +934,7 @@
     viewedDate = dateToLocal(new Date());
     updateDayNav();
     loadTodayData();
+    showDailyQuote();
   }
 
   // ── Load today's existing data from Google Sheet ──────────────────────────
@@ -1397,6 +1461,56 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     document.getElementById('btnEdit').click();
   }
 
+  // ── Daily quotes ─────────────────────────────────────────────────────────────
+  const QUOTES = [
+    { text: "The farm is a peculiar problem of our time, one that we can solve only by restoring culture to agriculture.", author: "Wendell Berry" },
+    { text: "To forget how to dig the earth and tend the soil is to forget ourselves.", author: "Mahatma Gandhi" },
+    { text: "The ultimate goal of farming is not the growing of crops, but the cultivation and perfection of human beings.", author: "Masanobu Fukuoka" },
+    { text: "Life on a farm is a school of patience; you can't hurry the crops or make an ox in two days.", author: "Henri Alain" },
+    { text: "Agriculture is the most healthful, most useful, and most noble employment of man.", author: "George Washington" },
+    { text: "The care of the Earth is our most ancient and most worthy, and after all our most pleasing responsibility.", author: "Wendell Berry" },
+    { text: "Farming looks mighty easy when your plow is a pencil and you're a thousand miles from the corn field.", author: "Dwight D. Eisenhower" },
+    { text: "The first supermarket supposedly appeared on the American landscape in 1946. That is not very long ago. Until then, where was all the food? Dear folks, the food was in homes, gardens, local fields, and forests.", author: "Joel Salatin" },
+    { text: "In every walk with nature, one receives far more than he seeks.", author: "John Muir" },
+    { text: "Those who labor in the earth are the chosen people of God.", author: "Thomas Jefferson" },
+    { text: "A nation that destroys its soils destroys itself.", author: "Franklin D. Roosevelt" },
+    { text: "The love of gardening is a seed once sown that never dies.", author: "Gertrude Jekyll" },
+    { text: "Self-sufficiency is not the goal; sufficiency is.", author: "Wendell Berry" },
+    { text: "The most important thing about a farm is to keep it working.", author: "Anonymous" },
+    { text: "We do not inherit the earth from our ancestors, we borrow it from our children.", author: "Native American Proverb" },
+    { text: "It is not so much for its beauty that the forest makes a claim upon men's hearts, as for that subtle something, that quality of air, that emanation from old trees, that so wonderfully changes and renews a weary spirit.", author: "Robert Louis Stevenson" },
+    { text: "Old MacDonald had a farm — and it was a damned good farm.", author: "Anonymous" },
+    { text: "The ox is slow, but the earth is patient.", author: "Traditional Proverb" },
+    { text: "The dairy cow is a miracle of nature — converting grass into one of the most nutritious foods on earth.", author: "Anonymous" },
+    { text: "There is no other door to knowledge than the door nature opens; and there is no truth except the truths we discover in nature.", author: "Luther Burbank" },
+    { text: "I go to nature to be soothed and healed, and to have my senses put in order.", author: "John Burroughs" },
+    { text: "The job of the farmer is not just to grow food, but to grow soil.", author: "Anonymous" },
+    { text: "A good farmer is nothing more nor less than a handy man with a sense of humus.", author: "E.B. White" },
+    { text: "If you want to be happy for a year, plant a garden. If you want to be happy for life, plant a tree.", author: "English Proverb" },
+    { text: "The best fertilizer is the farmer's shadow.", author: "Traditional Proverb" },
+    { text: "Cows are amongst the gentlest of breathing creatures; none show more passionate tenderness to their young when deprived of them.", author: "Thomas de Quincey" },
+    { text: "Every day is a new beginning on the farm.", author: "Anonymous" },
+    { text: "Farming is a profession of hope.", author: "Brian Brett" },
+    { text: "There is something about the outside of a cow that is good for the inside of a person.", author: "Anonymous" },
+    { text: "Good farmers, who take seriously their duties as stewards of Creation, contribute to the welfare of society.", author: "Wendell Berry" },
+  ];
+
+  function showDailyQuote() {
+    const todayKey = 'quote_shown_' + localDateStr(new Date());
+    if (localStorage.getItem(todayKey)) return; // already shown today
+
+    const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    document.getElementById('quoteText').textContent = quote.text;
+    document.getElementById('quoteAttribution').textContent = '— ' + quote.author;
+    document.getElementById('quoteOverlay').classList.add('visible');
+  }
+
+  function dismissQuote() {
+    document.getElementById('quoteOverlay').classList.remove('visible');
+    const todayKey = 'quote_shown_' + localDateStr(new Date());
+    localStorage.setItem(todayKey, '1');
+  }
+
   // ── Chart ────────────────────────────────────────────────────────────────────
   let milkChartInstance = null;
 
@@ -1597,6 +1711,15 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     });
   }
 </script>
+  <!-- Daily quote modal -->
+  <div class="quote-overlay" id="quoteOverlay">
+    <div class="quote-card">
+      <div class="quote-text" id="quoteText"></div>
+      <div class="quote-attribution" id="quoteAttribution"></div>
+      <button class="quote-btn" onclick="dismissQuote()">Let's go 🐄</button>
+    </div>
+  </div>
+
   <!-- Chart modal -->
   <div class="chart-overlay" id="chartOverlay">
     <div class="chart-modal">
@@ -1643,6 +1766,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     </div>
   </div>
 
-  <div class="footer">App last edited: Aug 19, 2026 8:40PM · v1.0.37</div>
+  <div class="footer">App last edited: Aug 19, 2026 9:15PM · v1.0.39</div>
 </body>
 </html>
