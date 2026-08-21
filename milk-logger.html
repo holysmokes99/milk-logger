@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.35">
+<link rel="manifest" href="manifest.json?v=1.0.36">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
@@ -1446,28 +1446,39 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     const startDate = new Date(viewedDate);
     startDate.setDate(startDate.getDate() - (days - 1));
 
-    // Fetch each row
+    // Fetch all rows in a single call
     const labels  = [];
-    const rowData = []; // array of { date, poppyAM, poppyPM, auroraAM, auroraPM }
+    const rowData = [];
+    const startRow = dateToRow(startDate);
+    const endRow   = dateToRow(endDate);
 
+    // Build date labels
     for (let i = 0; i < days; i++) {
       const d = new Date(startDate);
       d.setDate(d.getDate() + i);
-      const row = dateToRow(d);
       labels.push(d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }));
+    }
 
-      try {
-        const url = APPS_SCRIPT_URL + '?action=readRow&row=' + row + '&cols=11,12,14,15';
-        const res = await fetch(url, { method: 'GET', redirect: 'follow' });
-        const data = await res.json();
-        const v = data.values || {};
+    try {
+      const url = APPS_SCRIPT_URL + '?action=readRange&startRow=' + startRow + '&endRow=' + endRow + '&cols=11,12,14,15';
+      const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+      const data = await res.json();
+      const v = data.values || {};
+      const col11 = v[11] || [];
+      const col12 = v[12] || [];
+      const col14 = v[14] || [];
+      const col15 = v[15] || [];
+
+      for (let i = 0; i < days; i++) {
         rowData.push({
-          poppyAM : (v[11] && v[11] !== 0) ? v[11] : null,
-          poppyPM : (v[12] && v[12] !== 0) ? v[12] : null,
-          auroraAM: (v[14] && v[14] !== 0) ? v[14] : null,
-          auroraPM: (v[15] && v[15] !== 0) ? v[15] : null,
+          poppyAM : (col11[i] && col11[i] !== 0) ? col11[i] : null,
+          poppyPM : (col12[i] && col12[i] !== 0) ? col12[i] : null,
+          auroraAM: (col14[i] && col14[i] !== 0) ? col14[i] : null,
+          auroraPM: (col15[i] && col15[i] !== 0) ? col15[i] : null,
         });
-      } catch(e) {
+      }
+    } catch(e) {
+      for (let i = 0; i < days; i++) {
         rowData.push({ poppyAM: null, poppyPM: null, auroraAM: null, auroraPM: null });
       }
     }
@@ -1632,6 +1643,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     </div>
   </div>
 
-  <div class="footer">App last edited: Aug 19, 2026 8:15PM · v1.0.35</div>
+  <div class="footer">App last edited: Aug 19, 2026 8:30PM · v1.0.36</div>
 </body>
 </html>
