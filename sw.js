@@ -4,7 +4,7 @@
 // If offline, falls back to cached version.
 // When a new version is detected, activates immediately on next open.
 
-const CACHE_NAME = 'milk-logger-v1.0.40';
+const CACHE_NAME = 'milk-logger-v1.0.43';
 
 const FILES_TO_CACHE = [
   '/milk-logger/milk-logger.html',

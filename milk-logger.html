@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milk Log">
 <meta name="theme-color" content="#4A5C3A">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.json?v=1.0.40">
+<link rel="manifest" href="manifest.json?v=1.0.43">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap');
@@ -928,7 +928,7 @@
   });
 
   // ── Daily quotes ─────────────────────────────────────────────────────────────
-  const QUOTES = [
+  var QUOTES = [
     { text: "The farm is a peculiar problem of our time, one that we can solve only by restoring culture to agriculture.", author: "Wendell Berry" },
     { text: "To forget how to dig the earth and tend the soil is to forget ourselves.", author: "Mahatma Gandhi" },
     { text: "The ultimate goal of farming is not the growing of crops, but the cultivation and perfection of human beings.", author: "Masanobu Fukuoka" },
@@ -962,13 +962,18 @@
   ];
 
   function showDailyQuote() {
-    const todayKey = 'quote_shown_' + localDateStr(new Date());
-    if (localStorage.getItem(todayKey)) return; // already shown today
+    try {
+      if (!QUOTES || !QUOTES.length) return; // safety check
+      const todayKey = 'quote_shown_' + localDateStr(new Date());
+      if (localStorage.getItem(todayKey)) return; // already shown today
 
-    const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-    document.getElementById('quoteText').textContent = quote.text;
-    document.getElementById('quoteAttribution').textContent = '— ' + quote.author;
-    document.getElementById('quoteOverlay').classList.add('visible');
+      const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+      document.getElementById('quoteText').textContent = quote.text;
+      document.getElementById('quoteAttribution').textContent = '— ' + quote.author;
+      document.getElementById('quoteOverlay').classList.add('visible');
+    } catch(e) {
+      console.log('Quote error:', e);
+    }
   }
 
   function dismissQuote() {
@@ -985,7 +990,7 @@
     viewedDate = dateToLocal(new Date());
     updateDayNav();
     loadTodayData();
-    showDailyQuote();
+    setTimeout(showDailyQuote, 500);
   }
 
   // ── Load today's existing data from Google Sheet ──────────────────────────
@@ -1767,6 +1772,6 @@ Respond ONLY with a JSON object, no markdown, no explanation.`;
     </div>
   </div>
 
-  <div class="footer">App last edited: Aug 21, 2026 9:00AM · v1.0.40</div>
+  <div class="footer">App last edited: Aug 21, 2026 9:45AM · v1.0.43</div>
 </body>
 </html>
